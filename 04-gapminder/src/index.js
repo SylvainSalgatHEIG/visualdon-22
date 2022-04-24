@@ -122,82 +122,264 @@ function strToInt(nb) {
 
 // EXERCICE 2 - Cartographie
 
-let countries = []
+// let countries = []
 
-lifeExpectancy.forEach(row => {
-    let countryData = {};
-    countryData[row['country']] = row['2021']
-    countries.push(countryData)
+// lifeExpectancy.forEach(row => {
+//     let countryData = {};
+//     countryData[row['country']] = row['2021']
+//     countries.push(countryData)
+// });
+// console.log(countries);
+
+// d3.select("body")
+//     .append("div")
+//     .attr('id', 'graph')
+
+// margin = { top: 20, right: 20, bottom: 30, left: 50 },
+//     width = 650 - margin.left - margin.right,
+//     height = 500 - margin.top - margin.bottom;
+
+// svg = d3.select("#graph")
+//     .append("svg")
+//     .attr("width", width + margin.left + margin.right)
+//     .attr("height", height + margin.top + margin.bottom)
+
+// let projection = d3.geoMercator()
+//     .scale(70)
+//     .center([0, 20])
+//     .translate([width / 2, height / 2]);
+
+// let randomNumber = Math.floor(Math.random() * 6);
+// let aRandomScheme;
+// switch (randomNumber) {
+//     case 0:
+//         aRandomScheme = d3.schemeOranges;
+//         break;
+//     case 1:
+//         aRandomScheme = d3.schemeGreens;
+//         break;
+//     case 2:
+//         aRandomScheme = d3.schemeReds;
+//         break;
+//     case 3:
+//         aRandomScheme = d3.schemeBlues;
+//         break;
+//     case 4:
+//         aRandomScheme = d3.schemeGreys;
+//         break;
+//     case 5:
+//         aRandomScheme = d3.schemePurples;
+//         break;
+// }
+
+
+// let colorScale = d3.scaleThreshold()
+//     .domain([50, 60, 70, 80, 90, 100])
+//     .range(aRandomScheme[7]);
+
+// d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson").then(function (d) {
+//     // Draw the map
+//     svg.append("g")
+//         .selectAll("path")
+//         .data(d.features)
+//         .join("path")
+//         // draw each country
+//         .attr("d", d3.geoPath()
+//             .projection(projection)
+//         )
+//         // set id
+//         .attr("id", function (d) { return d.properties.name; })
+//         .attr("fill", function (d) {
+//             let number = 0;
+//             countries.forEach(country => {
+//                 if (typeof country[this.id] != "undefined") {
+//                     console.log(country[this.id]);
+//                     number = country[this.id]
+//                 }
+//             })
+//             console.log(number);
+//             return colorScale(number);
+//         })
+// })
+
+// Exercice 3 - Animation
+
+// Récupère toutes les années
+const annees = Object.keys(population[0])
+
+let pop = [],
+    income = [],
+    life = [],
+    dataCombined = [];
+
+// Merge data
+const mergeByCountry = (a1, a2, a3) => {
+    let data = [];
+    a1.map(itm => {
+        let newObject = {
+            ...a2.find((item) => (item.country === itm.country) && item),
+            ...a3.find((item) => (item.country === itm.country) && item),
+            ...itm
+        }
+        data.push(newObject);
+    })
+    return data;
+}
+
+annees.forEach(annee => {
+    pop.push({ "annee": annee, "data": converterSI(population, annee, "pop") })
+    income.push({ "annee": annee, "data": converterSI(gdp, annee, "income") })
+    life.push({ "annee": annee, "data": converterSI(lifeExpectancy, annee, "life") })
+    const popAnnee = pop.filter(d => d.annee == annee).map(d => d.data)[0];
+    const incomeAnnee = income.filter(d => d.annee == annee).map(d => d.data)[0];
+    const lifeAnnee = life.filter(d => d.annee == annee).map(d => d.data)[0];
+    dataCombined.push({ "annee": annee, "data": mergeByCountry(popAnnee, incomeAnnee, lifeAnnee) })
 });
-console.log(countries);
+
+function converterSI(array, variable, variableName) {
+    let convertedVariable = array.map(d => {
+        // Trouver le format SI (M, B, k)
+        let SI = typeof d[variable.toString()] === 'string' || d[variable.toString()] instanceof String ? d[variable.toString()].slice(-1) : d[variable.toString()];
+        // Extraire la partie numérique
+        let number = typeof d[variable.toString()] === 'string' || d[variable.toString()] instanceof String ? parseFloat(d[variable.toString()].slice(0, -1)) : d[variable.toString()];
+        // Selon la valeur SI, multiplier par la puissance
+        switch (SI) {
+            case 'M': {
+                return { "country": d.country, [variableName]: Math.pow(10, 6) * number };
+                break;
+            }
+            case 'B': {
+                return { "country": d.country, [variableName]: Math.pow(10, 9) * number };
+                break;
+            }
+            case 'k': {
+                return { "country": d.country, [variableName]: Math.pow(10, 3) * number };
+                break;
+            }
+            default: {
+                return { "country": d.country, [variableName]: number };
+                break;
+            }
+        }
+    })
+    return convertedVariable;
+};
+
+dataCombined.forEach(annee => {
+    annee.data.forEach(pays => {
+        if (checkPaysData(pays.pop) || checkPaysData(pays.life) || checkPaysData(pays.income)) {
+            pays.pop = undefined;
+            pays.life = undefined;
+            pays.income = undefined;
+        }
+    })
+});
+
+function checkPaysData(paysData) {
+    if (paysData == null || paysData == undefined) {
+        return true;
+    }
+}
 
 d3.select("body")
     .append("div")
     .attr('id', 'graph')
 
-margin = { top: 20, right: 20, bottom: 30, left: 50 },
-    width = 650 - margin.left - margin.right,
-    height = 500 - margin.top - margin.bottom;
+margin = { top: 10, right: 20, bottom: 30, left: 50 },
+    width = 1000 - margin.left - margin.right,
+    height = 600 - margin.top - margin.bottom;
 
 svg = d3.select("#graph")
     .append("svg")
     .attr("width", width + margin.left + margin.right)
     .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-let projection = d3.geoMercator()
-    .scale(70)
-    .center([0, 20])
-    .translate([width / 2, height / 2]);
+// Creation axe X
+theBiggestGDP = 0;
+dataCombined.forEach(annee => {
+    annee.data.forEach(pays => {
+        if (pays.income >= theBiggestGDP) {
+            theBiggestGDP = pays.income;
+        }
+    })
+});
 
-let randomNumber = Math.floor(Math.random() * 6);
-let aRandomScheme;
-switch (randomNumber) {
-    case 0:
-        aRandomScheme = d3.schemeOranges;
-        break;
-    case 1:
-        aRandomScheme = d3.schemeGreens;
-        break;
-    case 2:
-        aRandomScheme = d3.schemeReds;
-        break;
-    case 3:
-        aRandomScheme = d3.schemeBlues;
-        break;
-    case 4:
-        aRandomScheme = d3.schemeGreys;
-        break;
-    case 5:
-        aRandomScheme = d3.schemePurples;
-        break;
+// Ajout axe X
+x = d3.scaleSqrt()
+    .domain([0, theBiggestGDP])
+    .range([0, width]);
+svg.append("g")
+    .attr("transform", "translate(0," + height + ")")
+    .call(d3.axisBottom(x));
+
+// Creation axe Y
+theBiggestLifeExp = 0;
+dataCombined.forEach(annee => {
+    annee.data.forEach(pays => {
+        if (pays.life >= theBiggestLifeExp) {
+            theBiggestLifeExp = pays.life;
+        }
+    })
+});
+
+// Ajout axe Y
+y = d3.scalePow()
+    .exponent(1.25)
+    .domain([0, theBiggestLifeExp * 1.1])
+    .range([height, 0]);
+svg.append("g")
+    .call(d3.axisLeft(y));
+
+// Echelle pour les cercles
+z = d3.scaleLinear()
+    .domain([200000, 1310000000])
+    .range([5, 60]);
+
+let intervalle;
+
+function animate() {
+    // regarder si l'intervalle a été déjà démarré
+    if (!intervalle) {
+        intervalle = setInterval(play, 100);
+    }
+}
+
+d3.select('body').append('h1').attr('id', 'anneeCourante')
+
+let i = -1;
+function play() {
+    // Recommencer si à la fin du tableau
+    if (i == 250) {
+        i = 0;
+    } else {
+        i++;
+    }
+
+    d3.select('#anneeCourante').text(dataCombined[i].annee)
+    updateChart(dataCombined[i]);
 }
 
 
-let colorScale = d3.scaleThreshold()
-    .domain([50, 60, 70, 80, 90, 100])
-    .range(aRandomScheme[7]);
+// Fonction update
+function updateChart(data_iteration) {
+    svg.selectAll('circle')
+        .data(data_iteration.data)
+        .join(enter => enter.append('circle')
+            .attr("stroke", "black")
+            .style("fill", `#${Math.floor(Math.random() * 16777215).toString(16)}70`)
+            .attr('cx', function (d) { return x(d.income); })
+            .attr('cy', function (d) { return y(d.life); }).transition(d3.transition()
+                .duration(500)
+                .ease(d3.easeLinear)).attr('r', function (d) { return z(d.pop); }),
+            update => update.transition(d3.transition()
+                .duration(500)
+                .ease(d3.easeLinear))
+                .attr('r', function (d) { return z(d.pop); })
+                .attr('cx', function (d) { return x(d.income); })
+                .attr('cy', function (d) { return y(d.life); }),
+            exit => exit.remove())
+}
 
-d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson").then(function (d) {
-    // Draw the map
-    svg.append("g")
-        .selectAll("path")
-        .data(d.features)
-        .join("path")
-        // draw each country
-        .attr("d", d3.geoPath()
-            .projection(projection)
-        )
-        // set id
-        .attr("id", function (d) { return d.properties.name; })
-        .attr("fill", function (d) {
-            let number = 0;
-            countries.forEach(country => {
-                if (typeof country[this.id] != "undefined") {
-                    console.log(country[this.id]);
-                    number = country[this.id]
-                }
-            })
-            console.log(number);
-            return colorScale(number);
-        })
-})
+animate();

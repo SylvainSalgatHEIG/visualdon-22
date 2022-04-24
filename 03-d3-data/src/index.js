@@ -96,7 +96,9 @@ Promise.all([
             .append("g")
             .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
 
+            console.log(arrayUserPost.length)
         let x = d3.scaleBand()
+        
             .domain(arrayUserPost.map(function (d) { return d["nom_utilisateur"]; }))
             .range([1000, 0]);
 
